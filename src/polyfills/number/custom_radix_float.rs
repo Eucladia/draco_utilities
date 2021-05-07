@@ -113,7 +113,9 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
 
           // We need to backtrace while the last digit is the largest value for that specific radix.
           // SAFETY: Thw would always be a valid index that has been initialized.
-          while unsafe { *temp_buffer.get_unchecked(backtrack_idx).as_ptr() } == last_in_radix {
+          while backtrack_idx != DEFAULT_BUFFER_SIZE
+            && unsafe { *temp_buffer.get_unchecked(backtrack_idx).as_ptr() } == last_in_radix
+          {
             backtrack_idx += 1;
             end_count -= 1;
           }
@@ -122,7 +124,7 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
           // to the integral.
           //
           // Eg: base 10 of `1.9999999999999999` to base 16 would become `2`.
-          if backtrack_idx == end_count {
+          if backtrack_idx == DEFAULT_BUFFER_SIZE {
             // Need to decrease the end bound by 1 because the decimal point is *always* inserted
             end_count -= 1;
             integral += 1;

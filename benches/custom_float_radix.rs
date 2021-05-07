@@ -7,6 +7,7 @@ criterion_group!(
   singular_radix,
   singular_radix_large_fractionless_num,
   singular_radix_large_num,
+  backtrack,
   batched_radix,
 );
 criterion_main!(benches);
@@ -54,6 +55,20 @@ fn singular_radix_large_num(c: &mut Criterion) {
         &mut bytes,
       ));
     })
+  });
+}
+
+fn backtrack(c: &mut Criterion) {
+  let bytes = Vec::with_capacity(2200);
+
+  c.bench_function("float_to_radix (backtrack)", |b| {
+    b.iter_batched(
+      || bytes.clone(),
+      |mut bytes| {
+        black_box(number::float_to_custom_radix::<3>(2.0 / 7.0, &mut bytes));
+      },
+      BatchSize::SmallInput,
+    )
   });
 }
 
