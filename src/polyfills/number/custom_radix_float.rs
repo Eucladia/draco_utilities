@@ -59,8 +59,8 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
   }
 
   let abs_value = num.abs();
-  // We can't cast to a u64 because tf64 -> u64 lossy, but we can use a u128
-  // The performance on x64 is similar enough, just a few
+  // We can't cast to a u64 because f64 -> u64 is lossy, but we can use a u128 and the performance
+  // on x64 is similar enough.
   // NOTE: f64::{floor,trunc} have function calls that aren't inlined (as of rustc 1.51.0). :/
   let mut integral = abs_value.floor() as u128;
   let mut fraction = abs_value.fract();
@@ -89,8 +89,6 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
       fraction *= RADIX as f64;
       delta *= RADIX as f64;
 
-      // It's logically safe to cast to a u8 because the radix is capped at 36 and `N * 36`,
-      // where `N < 1`, will never fill up an entire byte.
       let byte = fraction as u8;
       let radix = get_radix_byte::<RADIX>(byte);
 
@@ -100,9 +98,6 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
 
       // If the remainder is exactly 0.5 or the value is odd, then it needs to be rounded towards
       // even.
-      //
-      // This can happen either due to all bytes being the at the max for that radix,
-      // or from odd radii because the result of `N^E`, where `N` is an odd radix, is odd.
       #[allow(clippy::float_cmp)]
       if fraction > ROUNDING_ERROR || (fraction == ROUNDING_ERROR && (byte & 1) == 1) {
         // If it's greater than 1 then we are forced to carry over the remainder to the proceeding
@@ -112,7 +107,7 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
           let last_in_radix = get_radix_byte::<RADIX>(RADIX - 1);
 
           // We need to backtrace while the last digit is the largest value for that specific radix.
-          // SAFETY: Thw would always be a valid index that has been initialized.
+          // SAFETY: This would always be a valid index that has been initialized.
           while backtrack_idx != DEFAULT_BUFFER_SIZE
             && unsafe { *temp_buffer.get_unchecked(backtrack_idx).as_ptr() } == last_in_radix
           {
@@ -171,7 +166,7 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
   // SAFETY: The starting index won't be greater than the maximum amount
   unsafe { temp_buffer.get_unchecked_mut(fraction_start..).reverse() };
 
-  // SAFETY: MaybeUninit<u8< has the same layout and alignment as u8 and the memory has been
+  // SAFETY: MaybeUninit<u8> has the same layout and alignment as `u8` and the memory has been
   // initialized.
   let set_slice = unsafe {
     let initialized = slice::from_raw_parts(temp_buffer.as_ptr().add(count), end_count - count);
