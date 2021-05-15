@@ -24,5 +24,9 @@ name = "encode_uri"
 harness = false
 
 [[bench]]
+name = "escape"
+harness = false
+
+[[bench]]
 name = "rng"
 harness = false

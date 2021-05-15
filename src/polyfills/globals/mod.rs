@@ -1,9 +1,11 @@
 mod decode_uri;
 mod encode_uri;
+mod escape;
 
 /// Global utilities.
 pub mod utils;
 
+pub use escape::escape;
 pub use uri::*;
 
 /// URI related functions

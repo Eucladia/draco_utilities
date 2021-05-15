@@ -1,6 +1,5 @@
+use crate::polyfills::globals::utils::byte_to_hex;
 use crate::polyfills::globals::UriError;
-use crate::polyfills::number::radii::HEXADECIMAL_RADIX;
-use crate::polyfills::number::BASE_36_LUT;
 
 /// Encodes a UTF-8 URI, reserving any character in the set
 /// `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$&'()*+,-./:;=?@_~`.
@@ -49,7 +48,7 @@ pub fn encode_inner(bytes: &[u8], reserved: &[u8], encoded: &mut Vec<u8>) -> Res
       // One octet
       x if x < 0x80 => {
         // ASCII fast path
-        encoded.extend_from_slice(&byte_to_hex(x));
+        encoded.extend_from_slice(&percent_hex(x));
         index += 1;
         continue;
       }
@@ -67,7 +66,7 @@ pub fn encode_inner(bytes: &[u8], reserved: &[u8], encoded: &mut Vec<u8>) -> Res
       return Err(UriError::InvalidUri);
     }
 
-    encoded.extend_from_slice(&byte_to_hex(current));
+    encoded.extend_from_slice(&percent_hex(current));
 
     for i in 0..bytes_needed {
       // SAFETY: We check if we have enough bytes beforehand.
@@ -78,7 +77,7 @@ pub fn encode_inner(bytes: &[u8], reserved: &[u8], encoded: &mut Vec<u8>) -> Res
         return Err(UriError::InvalidUtf8Character);
       }
 
-      encoded.extend_from_slice(&byte_to_hex(byte));
+      encoded.extend_from_slice(&percent_hex(byte));
       index += 1;
     }
 
@@ -89,24 +88,8 @@ pub fn encode_inner(bytes: &[u8], reserved: &[u8], encoded: &mut Vec<u8>) -> Res
 }
 
 #[inline]
-fn byte_to_hex(mut byte: u8) -> [u8; 3] {
-  // Pre-emptively pad.
-  let mut hex_buffer = [b'%', b'0', b'0'];
-  let mut index = hex_buffer.len();
+fn percent_hex(byte: u8) -> [u8; 3] {
+  let [one, two] = byte_to_hex(byte);
 
-  // LLVM unrolls this better than a manually unrolled version lol
-  loop {
-    let value = byte % HEXADECIMAL_RADIX;
-    let hex_byte = BASE_36_LUT[value as usize];
-
-    index -= 1;
-    hex_buffer[index] = hex_byte;
-    byte = (byte - value) / HEXADECIMAL_RADIX;
-
-    if byte == 0 {
-      break;
-    }
-  }
-
-  hex_buffer
+  [b'%', one, two]
 }
