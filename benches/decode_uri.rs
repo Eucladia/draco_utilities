@@ -14,7 +14,7 @@ fn decode_group(c: &mut Criterion) {
   group.throughput(Throughput::Bytes(ENCODED_STRING.len() as u64));
   group.bench_function("decode_uri", |b| {
     b.iter_batched(
-      || Vec::with_capacity(100),
+      || Vec::with_capacity(150),
       |mut bytes| black_box(decode_uri(ENCODED_STRING.as_bytes(), &mut bytes)),
       BatchSize::SmallInput,
     )

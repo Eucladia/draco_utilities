@@ -25,6 +25,12 @@ pub fn byte_to_hex(mut byte: u8) -> [u8; 2] {
   hex_buffer
 }
 
+/// Decodes a UTF-16 character to 2 UTF-8 characters.
+#[inline]
+pub fn decode_two_octets(val: u16) -> [u8; 2] {
+  [((val >> 6) | 0xC0) as u8, ((val & 0x3F) | 0x80) as u8]
+}
+
 /// Converts two bytes into a hex value.
 ///
 /// For performance reasons, this function does no validation on the provided input. However,

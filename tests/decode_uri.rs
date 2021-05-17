@@ -10,7 +10,7 @@ fn decode_uri_string() {
     &mut decoded,
   )
   .unwrap();
-  let result = &String::from_utf16(&decoded).unwrap();
+  let result = std::str::from_utf8(&decoded).unwrap();
 
   assert_eq!(result, expected);
 }

@@ -1,4 +1,4 @@
-use crate::polyfills::globals::utils::hex_value;
+use crate::polyfills::globals::utils::{decode_two_octets, hex_value};
 
 /// Unescapes a string.
 ///
@@ -63,9 +63,4 @@ pub fn unescape(bytes: &[u8], unescaped: &mut Vec<u8>) {
     unescaped.push(current);
     idx += 1;
   }
-}
-
-#[inline]
-fn decode_two_octets(val: u16) -> [u8; 2] {
-  [((val >> 6) | 0xC0) as u8, ((val & 0x3F) | 0x80) as u8]
 }
