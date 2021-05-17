@@ -15,7 +15,7 @@ pub fn encode_uri(bytes: &[u8], encoded: &mut Vec<u8>) -> Result<(), UriError> {
 }
 
 /// Encodes a UTF-8 URI, reserving any character in the set
-/// `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$&'()*+,-./:;=?@_~`.
+/// `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!'()*-._~`.
 ///
 /// # Notes
 /// This function functionally behaves the same as
