@@ -28,5 +28,9 @@ name = "escape"
 harness = false
 
 [[bench]]
+name = "unescape"
+harness = false
+
+[[bench]]
 name = "rng"
 harness = false

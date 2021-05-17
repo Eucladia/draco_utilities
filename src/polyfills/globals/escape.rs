@@ -3,8 +3,12 @@ use crate::polyfills::globals::utils::byte_to_hex;
 /// Escapes a string.
 ///
 /// # Notes
-/// This function behaves the same as
-/// [JavaScript's `escape`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/escape)
+/// This function is the opposite of the [`unescape`] function.
+///
+/// This function is functionally equivalent to JavaScript's
+/// [`escape`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/escape)
+///
+/// [`unescape`]: crate::polyfills::globals::unescape
 pub fn escape(bytes: &[u8], escaped: &mut Vec<u8>) {
   const RESERVED: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@*_+-./";
 
