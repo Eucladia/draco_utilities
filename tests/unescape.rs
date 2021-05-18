@@ -1,4 +1,4 @@
-use draco_utilities::polyfills::globals::unescape;
+use draco_utilities::globals::unescape;
 
 #[test]
 fn unescape_combined() {

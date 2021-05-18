@@ -1,5 +1,5 @@
-use crate::polyfills::number::radii::{BINARY_RADIX, HEXATRIDECIMAL_RADIX};
-use crate::polyfills::number::{from_character_byte, next_floating_point, BASE_36_LUT};
+use crate::number::radii::{BINARY_RADIX, HEXATRIDECIMAL_RADIX};
+use crate::number::{from_character_byte, next_floating_point, BASE_36_LUT};
 
 use std::mem::MaybeUninit;
 use std::slice;
@@ -12,7 +12,7 @@ const DEFAULT_BUFFER_SIZE: usize = 2200;
 /// # Examples
 ///
 /// ```
-/// use draco_utilities::polyfills::number::float_to_custom_radix;
+/// use draco_utilities::number::float_to_custom_radix;
 ///
 /// const RADIX: u8 = 16;
 ///

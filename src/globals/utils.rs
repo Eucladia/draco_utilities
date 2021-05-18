@@ -1,5 +1,5 @@
-use crate::polyfills::number::radii::HEXADECIMAL_RADIX;
-use crate::polyfills::number::BASE_36_LUT;
+use crate::number::radii::HEXADECIMAL_RADIX;
+use crate::number::BASE_36_LUT;
 
 /// Converts a byte to it's zero padded hexadecimal representation.
 #[inline]

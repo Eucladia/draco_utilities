@@ -1,5 +1,5 @@
-use crate::polyfills::globals::utils::{decode_two_octets, hex_value};
-use crate::polyfills::globals::UriError;
+use crate::globals::utils::{decode_two_octets, hex_value};
+use crate::globals::UriError;
 
 /// Decodes a UTF-8 encoded URI, reserving any character in the set `#$&+,/:;=?@`.
 ///

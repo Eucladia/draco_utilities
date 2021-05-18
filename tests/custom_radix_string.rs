@@ -1,5 +1,5 @@
 mod float_radix {
-  use draco_utilities::polyfills::number::float_to_custom_radix;
+  use draco_utilities::number::float_to_custom_radix;
 
   macro_rules! test {
     ($name:ident, $float:expr, $radix:literal, $expected:literal) => {

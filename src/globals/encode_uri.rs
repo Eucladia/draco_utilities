@@ -1,5 +1,5 @@
-use crate::polyfills::globals::utils::byte_to_hex;
-use crate::polyfills::globals::UriError;
+use crate::globals::utils::byte_to_hex;
+use crate::globals::UriError;
 
 /// Encodes a UTF-8 URI, reserving any character in the set
 /// `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!#$&'()*+,-./:;=?@_~`.

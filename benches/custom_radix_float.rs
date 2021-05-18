@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
 
-use draco_utilities::polyfills::number;
+use draco_utilities::number;
 
 criterion_group!(
   benches,

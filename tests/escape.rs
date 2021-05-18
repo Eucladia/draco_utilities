@@ -1,4 +1,4 @@
-use draco_utilities::polyfills::globals::escape;
+use draco_utilities::globals::escape;
 
 #[test]
 fn escape_reserved() {

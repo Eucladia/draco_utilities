@@ -1,4 +1,4 @@
-use crate::polyfills::globals::utils::byte_to_hex;
+use crate::globals::utils::byte_to_hex;
 
 /// Escapes a string.
 ///

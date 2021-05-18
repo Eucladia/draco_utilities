@@ -1,4 +1,4 @@
-use draco_utilities::polyfills::number::utils;
+use draco_utilities::number::utils;
 
 mod byte_conversion {
   use super::*;

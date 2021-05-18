@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 
-use draco_utilities::polyfills::globals::unescape;
+use draco_utilities::globals::unescape;
 
 criterion_group!(benches, decode_group);
 criterion_main!(benches);

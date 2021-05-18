@@ -1,7 +1,9 @@
 #![deny(missing_docs)]
 //! Various utilities.
 
-/// Polyfills for native functions in other languages.
-pub mod polyfills;
+/// Global JavaScript functions.
+pub mod globals;
+/// Number related utilities.
+pub mod number;
 /// A fast pseudorandom number generator.
 pub mod rng;

@@ -1,4 +1,4 @@
-use draco_utilities::polyfills::globals::encode_uri;
+use draco_utilities::globals::encode_uri;
 
 #[test]
 fn encode_uri_string() {
@@ -11,7 +11,7 @@ fn encode_uri_string() {
   )
   .unwrap();
 
-  let result = &String::from_utf8(encoded).unwrap();
+  let result = std::str::from_utf8(&encoded).unwrap();
 
   assert_eq!(result, expected);
 }

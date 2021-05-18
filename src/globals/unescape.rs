@@ -1,4 +1,4 @@
-use crate::polyfills::globals::utils::{decode_two_octets, hex_value};
+use crate::globals::utils::{decode_two_octets, hex_value};
 
 /// Unescapes a string.
 ///

@@ -1,4 +1,4 @@
-use draco_utilities::polyfills::globals::decode_uri;
+use draco_utilities::globals::decode_uri;
 
 #[test]
 fn decode_uri_string() {
