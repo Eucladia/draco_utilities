@@ -16,7 +16,7 @@ pub fn escape(bytes: &[u8], escaped: &mut Vec<u8>) {
 
   while idx < bytes.len() {
     // SAFETY: `idx < bytes.len()` condition guarantees that this is valid.
-    let current = unsafe { *bytes.get_unchecked(idx) };
+    let mut current = unsafe { *bytes.get_unchecked(idx) };
 
     if RESERVED.contains(&current) {
       escaped.push(current);
@@ -37,27 +37,20 @@ pub fn escape(bytes: &[u8], escaped: &mut Vec<u8>) {
           let [three, four] = byte_to_hex((val & 0xFF) as u8);
 
           escaped.extend_from_slice(&[b'%', b'u', one, two, three, four]);
+          idx += 2;
+
+          continue;
         } else {
           // Get the LSBs only
-          let [one, two] = byte_to_hex((val & 0xFF) as u8);
-
-          escaped.extend_from_slice(&[b'%', one, two]);
+          current = (val & 0xFF) as u8;
+          idx += 1;
         }
-
-        idx += 2;
-      } else {
-        append_single_byte(current, escaped, &mut idx);
       }
-    } else {
-      append_single_byte(current, escaped, &mut idx)
     }
+
+    let [one, two] = byte_to_hex(current);
+
+    escaped.extend_from_slice(&[b'%', one, two]);
+    idx += 1;
   }
-}
-
-#[inline]
-fn append_single_byte(byte: u8, escaped: &mut Vec<u8>, counter: &mut usize) {
-  let [one, two] = byte_to_hex(byte);
-
-  escaped.extend_from_slice(&[b'%', one, two]);
-  *counter += 1;
 }
