@@ -1,6 +1,8 @@
 #![deny(missing_docs)]
 //! Various utilities.
 
+/// Base64 utilities.
+pub mod base64;
 /// Global JavaScript functions.
 pub mod globals;
 /// Number related utilities.

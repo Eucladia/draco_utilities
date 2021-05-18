@@ -34,3 +34,7 @@ harness = false
 [[bench]]
 name = "rng"
 harness = false
+
+[[bench]]
+name = "base64"
+harness = false
