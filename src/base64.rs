@@ -39,6 +39,60 @@ pub enum DecodeError {
 const PADDING_CHAR: u8 = b'=';
 const INVALID_CHAR: u32 = 0x01FFFFFF;
 
+/// Encodes a base64 string.
+pub fn encode_base64(bytes: &[u8], encoded: &mut Vec<u8>) {
+  let length = bytes.len();
+  let mut idx = 0;
+
+  unsafe {
+    if length > 2 {
+      while idx < length - 2 {
+        let [one, two, three] = match bytes.get_unchecked(idx..idx + 3) {
+          [one, two, three, ..] => [*one, *two, *three],
+          // SAFETY: We have enough bytes.
+          _ => std::hint::unreachable_unchecked(),
+        };
+
+        encoded.extend_from_slice(&[
+          E0[one as usize],
+          E1[(((one & 0x03) << 4) | ((two >> 4) & 0x0F)) as usize],
+          E1[(((two & 0x0F) << 2) | ((three >> 6) & 0x03)) as usize],
+          E2[three as usize],
+        ]);
+
+        idx += 3;
+      }
+    }
+
+    match length - idx {
+      0 => {}
+      1 => {
+        let one = *bytes.get_unchecked(idx);
+
+        encoded.extend_from_slice(&[
+          E0[one as usize],
+          E1[((one & 0x03) << 4) as usize],
+          PADDING_CHAR,
+          PADDING_CHAR,
+        ]);
+      }
+      2 => {
+        let one = *bytes.get_unchecked(idx);
+        let two = *bytes.get_unchecked(idx + 1);
+
+        encoded.extend_from_slice(&[
+          E0[one as usize],
+          E1[(((one & 0x03) << 4) | ((two >> 4) & 0x0F)) as usize],
+          E2[((two & 0x0F) << 2) as usize],
+          PADDING_CHAR,
+        ]);
+      }
+      // SAFETY: Other arms would've been reached by now.
+      _ => std::hint::unreachable_unchecked(),
+    }
+  }
+}
+
 /// Decodes a base64 encoded string.
 pub fn decode_base64(bytes: &[u8], decoded: &mut Vec<u8>) -> Result<(), DecodeError> {
   let mut length = bytes.len();
@@ -73,6 +127,7 @@ pub fn decode_base64(bytes: &[u8], decoded: &mut Vec<u8>) -> Result<(), DecodeEr
 
     // SAFETY: There's enough remainder bytes to get without branching.
     let total = match rem {
+      0 => return Ok(()),
       1 => {
         let total = D0[*bytes.get_unchecked(idx) as usize];
         decoded.push(total as u8);
@@ -119,9 +174,9 @@ unsafe fn decode_pair(bytes: &[u8], index: usize) -> (u32, [u8; 3]) {
   (
     total,
     [
-      (total & 0x000000FF) as u8,
-      ((total & 0x0000FF00) >> 8) as u8,
-      ((total & 0x00FF0000) >> 16) as u8,
+      (total & 0xFF) as u8,
+      ((total & 0xFF00) >> 8) as u8,
+      ((total & 0xFF0000) >> 16) as u8,
     ],
   )
 }
@@ -264,4 +319,61 @@ const D3: [u32; 256] = [
   0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff,
   0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff,
   0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff, 0x01ffffff,
+];
+
+const E0: [u8; 256] = [
+  b'A', b'A', b'A', b'A', b'B', b'B', b'B', b'B', b'C', b'C', b'C', b'C', b'D', b'D', b'D', b'D',
+  b'E', b'E', b'E', b'E', b'F', b'F', b'F', b'F', b'G', b'G', b'G', b'G', b'H', b'H', b'H', b'H',
+  b'I', b'I', b'I', b'I', b'J', b'J', b'J', b'J', b'K', b'K', b'K', b'K', b'L', b'L', b'L', b'L',
+  b'M', b'M', b'M', b'M', b'N', b'N', b'N', b'N', b'O', b'O', b'O', b'O', b'P', b'P', b'P', b'P',
+  b'Q', b'Q', b'Q', b'Q', b'R', b'R', b'R', b'R', b'S', b'S', b'S', b'S', b'T', b'T', b'T', b'T',
+  b'U', b'U', b'U', b'U', b'V', b'V', b'V', b'V', b'W', b'W', b'W', b'W', b'X', b'X', b'X', b'X',
+  b'Y', b'Y', b'Y', b'Y', b'Z', b'Z', b'Z', b'Z', b'a', b'a', b'a', b'a', b'b', b'b', b'b', b'b',
+  b'c', b'c', b'c', b'c', b'd', b'd', b'd', b'd', b'e', b'e', b'e', b'e', b'f', b'f', b'f', b'f',
+  b'g', b'g', b'g', b'g', b'h', b'h', b'h', b'h', b'i', b'i', b'i', b'i', b'j', b'j', b'j', b'j',
+  b'k', b'k', b'k', b'k', b'l', b'l', b'l', b'l', b'm', b'm', b'm', b'm', b'n', b'n', b'n', b'n',
+  b'o', b'o', b'o', b'o', b'p', b'p', b'p', b'p', b'q', b'q', b'q', b'q', b'r', b'r', b'r', b'r',
+  b's', b's', b's', b's', b't', b't', b't', b't', b'u', b'u', b'u', b'u', b'v', b'v', b'v', b'v',
+  b'w', b'w', b'w', b'w', b'x', b'x', b'x', b'x', b'y', b'y', b'y', b'y', b'z', b'z', b'z', b'z',
+  b'0', b'0', b'0', b'0', b'1', b'1', b'1', b'1', b'2', b'2', b'2', b'2', b'3', b'3', b'3', b'3',
+  b'4', b'4', b'4', b'4', b'5', b'5', b'5', b'5', b'6', b'6', b'6', b'6', b'7', b'7', b'7', b'7',
+  b'8', b'8', b'8', b'8', b'9', b'9', b'9', b'9', b'+', b'+', b'+', b'+', b'/', b'/', b'/', b'/',
+];
+
+const E1: [u8; 256] = [
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+];
+
+const E2: [u8; 256] = [
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
+  b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H', b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+  b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X', b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+  b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n', b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+  b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/',
 ];
