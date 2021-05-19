@@ -56,52 +56,38 @@ pub fn decode_base64(bytes: &[u8], decoded: &mut Vec<u8>) -> Result<(), DecodeEr
   }
 
   let rem = length % 4;
-  let chunks = if rem == 0 { length / 4 - 1 } else { length / 4 };
   let mut idx = 0;
-  let mut set = 0;
 
   unsafe {
-    while idx < chunks {
+    while idx < length & !3 {
       // SAFETY: We would have 4 bytes due to the condition
-      let (total, pair) = decode_pair(bytes, set);
+      let (total, pair) = decode_pair(bytes, idx);
 
       if total >= INVALID_CHAR {
         return Err(DecodeError::InvalidContent);
       }
 
       decoded.extend_from_slice(&pair);
-      idx += 1;
-      set += 4;
+      idx += 4
     }
 
     // SAFETY: There's enough remainder bytes to get without branching.
     let total = match rem {
-      0 => {
-        let (total, pair) = decode_pair(bytes, set);
-
-        if total >= INVALID_CHAR {
-          return Err(DecodeError::InvalidContent);
-        }
-
-        decoded.extend_from_slice(&pair);
-
-        return Ok(());
-      }
       1 => {
-        let total = D0[*bytes.get_unchecked(set) as usize];
+        let total = D0[*bytes.get_unchecked(idx) as usize];
         decoded.push(total as u8);
         total
       }
       2 => {
         let total =
-          D0[*bytes.get_unchecked(set) as usize] | D1[*bytes.get_unchecked(set + 1) as usize];
+          D0[*bytes.get_unchecked(idx) as usize] | D1[*bytes.get_unchecked(idx + 1) as usize];
         decoded.push(total as u8);
         total
       }
       3 => {
-        let total = D0[*bytes.get_unchecked(set) as usize]
-          | D1[*bytes.get_unchecked(set + 1) as usize]
-          | D2[*bytes.get_unchecked(set + 2) as usize];
+        let total = D0[*bytes.get_unchecked(idx) as usize]
+          | D1[*bytes.get_unchecked(idx + 1) as usize]
+          | D2[*bytes.get_unchecked(idx + 2) as usize];
 
         decoded.extend_from_slice(&[
           (total & 0x000000FF) as u8,
