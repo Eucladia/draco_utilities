@@ -2,7 +2,19 @@ use crate::number::radii::{BINARY_RADIX, HEXATRIDECIMAL_RADIX};
 use crate::number::{from_character_byte, next_floating_point, BASE_36_LUT};
 
 use std::mem::MaybeUninit;
-use std::slice;
+
+/// Static assertion, particularly useful for constraining a min_const_generic
+macro_rules! static_assert {
+  ($imm:ident : $ty:ty where $e:expr) => {
+    struct Validate<const $imm: $ty>();
+    impl<const $imm: $ty> Validate<$imm> {
+      const VALID: () = {
+        let _ = 1 / ($e as usize);
+      };
+    }
+    let _ = Validate::<$imm>::VALID;
+  };
+}
 
 const ROUNDING_ERROR: f64 = 0.5;
 const DEFAULT_BUFFER_SIZE: usize = 2200;
@@ -27,14 +39,15 @@ const DEFAULT_BUFFER_SIZE: usize = 2200;
 /// ```
 ///
 /// # Notes
-/// This function will panic in debug mode if the radix is not in the range [2, 36].
+/// This function uses a static assertion and will fail at compile time if the radix
+/// is not within [2, 36].
 ///
-///
-/// The function follows the [EMCA spec](https://tc39.es/ecma262/#sec-number.prototype.tostring) and
-/// uses a similar implementation as
+/// This function is an implementation of
+/// [Number.prototype.toString](https://tc39.es/ecma262/#sec-number.prototype.tostring)
+/// and uses a similar implementation as
 /// [v8's](https://github.com/v8/v8/blob/master/src/numbers/conversions.cc#L1269).
 pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
-  debug_assert!((BINARY_RADIX..=HEXATRIDECIMAL_RADIX).contains(&RADIX));
+  static_assert!(RADIX: u8 where RADIX >= BINARY_RADIX && RADIX <= HEXATRIDECIMAL_RADIX);
 
   if num.is_nan() {
     return bytes.extend_from_slice(b"NaN");
@@ -70,6 +83,7 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
 
   // TODO: Since we force the radix to be a const, we can compute a better estimate once we can use
   // generics from outer functions.
+
   // SAFETY: `MaybeUninit`s do not require initialization
   let mut temp_buffer: [MaybeUninit<u8>; DEFAULT_BUFFER_SIZE] =
     unsafe { MaybeUninit::uninit().assume_init() };
@@ -108,9 +122,10 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
 
           // We need to backtrace while the last digit is the largest value for that specific radix.
           // SAFETY: This would always be a valid index that has been initialized.
-          while backtrack_idx != DEFAULT_BUFFER_SIZE
-            && unsafe { *temp_buffer.get_unchecked(backtrack_idx).as_ptr() } == last_in_radix
-          {
+          while unsafe {
+            backtrack_idx != DEFAULT_BUFFER_SIZE
+              && *temp_buffer.get_unchecked(backtrack_idx).as_ptr() == last_in_radix
+          } {
             backtrack_idx += 1;
             end_count -= 1;
           }
@@ -168,11 +183,8 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
 
   // SAFETY: MaybeUninit<u8> has the same layout and alignment as `u8` and the memory has been
   // initialized.
-  let set_slice = unsafe {
-    let initialized = slice::from_raw_parts(temp_buffer.as_ptr().add(count), end_count - count);
-
-    &*(initialized as *const _ as *const [u8])
-  };
+  let set_slice =
+    unsafe { &*(temp_buffer.get_unchecked(count..end_count) as *const _ as *const [u8]) };
 
   bytes.extend_from_slice(set_slice);
 }
