@@ -109,24 +109,32 @@ pub fn decode_base64(bytes: &[u8], decoded: &mut Vec<u8>) -> Result<(), DecodeEr
     }
   }
 
-  let rem = length % 4;
   let mut idx = 0;
 
   unsafe {
     while idx < length & !3 {
       // SAFETY: We would have 4 bytes due to the condition
-      let (total, pair) = decode_pair(bytes, idx);
+      let [one, two, three, four] = match bytes.get_unchecked(idx..idx + 4) {
+        [one, two, three, four, ..] => [*one, *two, *three, *four],
+        _ => std::hint::unreachable_unchecked(),
+      };
+
+      let total = D0[one as usize] | D1[two as usize] | D2[three as usize] | D3[four as usize];
 
       if total >= INVALID_CHAR {
         return Err(DecodeError::InvalidContent);
       }
 
-      decoded.extend_from_slice(&pair);
+      decoded.extend_from_slice(&[
+        (total & 0xFF) as u8,
+        ((total & 0xFF00) >> 8) as u8,
+        ((total & 0xFF0000) >> 16) as u8,
+      ]);
       idx += 4
     }
 
     // SAFETY: There's enough remainder bytes to get without branching.
-    let total = match rem {
+    let total = match length % 4 {
       0 => return Ok(()),
       1 => {
         let total = D0[*bytes.get_unchecked(idx) as usize];
@@ -144,10 +152,7 @@ pub fn decode_base64(bytes: &[u8], decoded: &mut Vec<u8>) -> Result<(), DecodeEr
           | D1[*bytes.get_unchecked(idx + 1) as usize]
           | D2[*bytes.get_unchecked(idx + 2) as usize];
 
-        decoded.extend_from_slice(&[
-          (total & 0x000000FF) as u8,
-          ((total & 0x0000FF00) >> 8) as u8,
-        ]);
+        decoded.extend_from_slice(&[(total & 0xFF) as u8, ((total & 0xFF00) >> 8) as u8]);
         total
       }
       // SAFETY: `rem % 4` would've reached the other arms.
@@ -160,25 +165,6 @@ pub fn decode_base64(bytes: &[u8], decoded: &mut Vec<u8>) -> Result<(), DecodeEr
   }
 
   Ok(())
-}
-
-unsafe fn decode_pair(bytes: &[u8], index: usize) -> (u32, [u8; 3]) {
-  // SAFETY: The caller must uphold the condition of having enough bytes
-  let [one, two, three, four] = match bytes.get_unchecked(index..index + 4) {
-    [one, two, three, four, ..] => [*one, *two, *three, *four],
-    _ => std::hint::unreachable_unchecked(),
-  };
-
-  let total = D0[one as usize] | D1[two as usize] | D2[three as usize] | D3[four as usize];
-
-  (
-    total,
-    [
-      (total & 0xFF) as u8,
-      ((total & 0xFF00) >> 8) as u8,
-      ((total & 0xFF0000) >> 16) as u8,
-    ],
-  )
 }
 
 const D0: [u32; 256] = [
