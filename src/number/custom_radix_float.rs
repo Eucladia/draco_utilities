@@ -85,108 +85,108 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
   // generics from outer functions.
 
   // SAFETY: `MaybeUninit`s do not require initialization
-  let mut temp_buffer: [MaybeUninit<u8>; DEFAULT_BUFFER_SIZE] =
-    unsafe { MaybeUninit::uninit().assume_init() };
-  // The number of starting bytes not written to.
-  let mut count = DEFAULT_BUFFER_SIZE;
-  // We need to store the end count for backtracking, this is different from `count` because this
-  // gets decremented when there needs to be backtracking so that we don't add the no longer
-  // needed bytes.
-  let mut end_count = DEFAULT_BUFFER_SIZE;
-  // We need to store the start of the fractional digits so we can reverse the order of them. It's
-  // initialized to the current buffer length which will make the later `slice::reverse` call
-  // not change anything if there were no fractional digits, plus there is no additional branch :D
-  let mut fraction_start = DEFAULT_BUFFER_SIZE;
+  unsafe {
+    let mut temp_buffer: [MaybeUninit<u8>; DEFAULT_BUFFER_SIZE] =
+      MaybeUninit::uninit().assume_init();
+    // The number of starting bytes not written to.
+    let mut count = DEFAULT_BUFFER_SIZE;
+    // We need to store the end count for backtracking, this is different from `count` because this
+    // gets decremented when there needs to be backtracking so that we don't add the no longer
+    // needed bytes.
+    let mut end_count = DEFAULT_BUFFER_SIZE;
+    // We need to store the start of the fractional digits so we can reverse the order of them. It's
+    // initialized to the current buffer length which will make the later `slice::reverse` call
+    // not change anything if there were no fractional digits, plus there is no additional branch :D
+    let mut fraction_start = DEFAULT_BUFFER_SIZE;
 
-  if fraction >= delta {
+    if fraction >= delta {
+      loop {
+        fraction *= RADIX as f64;
+        delta *= RADIX as f64;
+
+        let byte = fraction as u8;
+        let radix = get_radix_byte::<RADIX>(byte);
+
+        count -= 1;
+        temp_buffer[count] = MaybeUninit::new(radix);
+        fraction -= byte as f64;
+
+        // If the remainder is exactly 0.5 or the value is odd, then it needs to be rounded towards
+        // even.
+        #[allow(clippy::float_cmp)]
+        if fraction > ROUNDING_ERROR || (fraction == ROUNDING_ERROR && (byte & 1) == 1) {
+          // If it's greater than 1 then we are forced to carry over the remainder to the proceeding
+          // digits.
+          if fraction + delta > 1.0 {
+            let mut backtrack_idx = count;
+            let last_in_radix = get_radix_byte::<RADIX>(RADIX - 1);
+
+            // We need to backtrace while the last digit is the largest value for that specific radix.
+            // SAFETY: This would always be a valid index that has been initialized.
+            while backtrack_idx != DEFAULT_BUFFER_SIZE
+              && *temp_buffer.get_unchecked(backtrack_idx).as_ptr() == last_in_radix
+            {
+              backtrack_idx += 1;
+              end_count -= 1;
+            }
+
+            // We've backtracked to as far as the theoretical decimal point so we need to carry over
+            // to the integral.
+            //
+            // Eg: base 10 of `1.9999999999999999` to base 16 would become `2`.
+            if backtrack_idx == DEFAULT_BUFFER_SIZE {
+              // Need to decrease the end bound by 1 because the decimal point is *always* inserted
+              end_count -= 1;
+              integral += 1;
+            } else {
+              // SAFETY: This would always be a valid index that has been initialized.
+              let current_byte = *temp_buffer.get_unchecked(backtrack_idx).as_ptr();
+              let actual_value = from_character_byte(current_byte);
+              let incremented_byte = get_radix_byte::<RADIX>(actual_value + 1);
+
+              temp_buffer[backtrack_idx] = MaybeUninit::new(incremented_byte);
+            }
+            break;
+          }
+        } else if fraction < delta {
+          break;
+        }
+      }
+
+      fraction_start = count;
+      count -= 1;
+      temp_buffer[count] = MaybeUninit::new(b'.');
+    }
+
     loop {
-      fraction *= RADIX as f64;
-      delta *= RADIX as f64;
-
-      let byte = fraction as u8;
-      let radix = get_radix_byte::<RADIX>(byte);
+      let value = integral % RADIX as u128;
+      let radix = get_radix_byte::<RADIX>(value as u8);
 
       count -= 1;
       temp_buffer[count] = MaybeUninit::new(radix);
-      fraction -= byte as f64;
+      integral = (integral - value) / RADIX as u128;
 
-      // If the remainder is exactly 0.5 or the value is odd, then it needs to be rounded towards
-      // even.
-      #[allow(clippy::float_cmp)]
-      if fraction > ROUNDING_ERROR || (fraction == ROUNDING_ERROR && (byte & 1) == 1) {
-        // If it's greater than 1 then we are forced to carry over the remainder to the proceeding
-        // digits.
-        if fraction + delta > 1.0 {
-          let mut backtrack_idx = count;
-          let last_in_radix = get_radix_byte::<RADIX>(RADIX - 1);
-
-          // We need to backtrace while the last digit is the largest value for that specific radix.
-          // SAFETY: This would always be a valid index that has been initialized.
-          while unsafe {
-            backtrack_idx != DEFAULT_BUFFER_SIZE
-              && *temp_buffer.get_unchecked(backtrack_idx).as_ptr() == last_in_radix
-          } {
-            backtrack_idx += 1;
-            end_count -= 1;
-          }
-
-          // We've backtracked to as far as the theoretical decimal point so we need to carry over
-          // to the integral.
-          //
-          // Eg: base 10 of `1.9999999999999999` to base 16 would become `2`.
-          if backtrack_idx == DEFAULT_BUFFER_SIZE {
-            // Need to decrease the end bound by 1 because the decimal point is *always* inserted
-            end_count -= 1;
-            integral += 1;
-          } else {
-            // SAFETY: This would always be a valid index that has been initialized.
-            let current_byte = unsafe { *temp_buffer.get_unchecked(backtrack_idx).as_ptr() };
-            let actual_value = from_character_byte(current_byte);
-            let incremented_byte = get_radix_byte::<RADIX>(actual_value + 1);
-
-            temp_buffer[backtrack_idx] = MaybeUninit::new(incremented_byte);
-          }
-          break;
-        }
-      } else if fraction < delta {
+      if integral == 0 {
         break;
       }
     }
 
-    fraction_start = count;
-    count -= 1;
-    temp_buffer[count] = MaybeUninit::new(b'.');
-  }
-
-  loop {
-    let value = integral % RADIX as u128;
-    let radix = get_radix_byte::<RADIX>(value as u8);
-
-    count -= 1;
-    temp_buffer[count] = MaybeUninit::new(radix);
-    integral = (integral - value) / RADIX as u128;
-
-    if integral == 0 {
-      break;
+    if is_negative {
+      count -= 1;
+      temp_buffer[count] = MaybeUninit::new(b'-');
     }
+
+    // We don't need to have an end bound because of all of the bytes after this would
+    // have been initialized already.
+    // SAFETY: The starting index won't be greater than the maximum amount
+    temp_buffer.get_unchecked_mut(fraction_start..).reverse();
+
+    // SAFETY: MaybeUninit<u8> has the same layout and alignment as `u8` and the memory has been
+    // initialized.
+    let set_slice = &*(temp_buffer.get_unchecked(count..end_count) as *const _ as *const [u8]);
+
+    bytes.extend_from_slice(set_slice);
   }
-
-  if is_negative {
-    count -= 1;
-    temp_buffer[count] = MaybeUninit::new(b'-');
-  }
-
-  // We don't need to have an end bound because of all of the bytes after this would
-  // have been initialized already.
-  // SAFETY: The starting index won't be greater than the maximum amount
-  unsafe { temp_buffer.get_unchecked_mut(fraction_start..).reverse() };
-
-  // SAFETY: MaybeUninit<u8> has the same layout and alignment as `u8` and the memory has been
-  // initialized.
-  let set_slice =
-    unsafe { &*(temp_buffer.get_unchecked(count..end_count) as *const _ as *const [u8]) };
-
-  bytes.extend_from_slice(set_slice);
 }
 
 fn get_radix_byte<const BASE: u8>(byte: u8) -> u8 {
