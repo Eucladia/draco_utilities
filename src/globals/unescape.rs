@@ -31,7 +31,7 @@ pub fn unescape(bytes: &[u8], unescaped: &mut Vec<u8>) {
           let second_val = hex_value(three, four);
 
           // Only append valid hexadecimal bytes.
-          if first_val < 0x100 && second_val < 0x100 {
+          if first_val <= u8::MAX as u32 && second_val <= u8::MAX as u32 {
             let combined = ((first_val << 8) | second_val) as u16;
 
             unescaped.extend_from_slice(&decode_two_octets(combined));
@@ -44,7 +44,7 @@ pub fn unescape(bytes: &[u8], unescaped: &mut Vec<u8>) {
           let total = hex_value(one, two) as u16;
 
           // Only append valid hexadecimal bytes.
-          if total < 0x100 {
+          if total <= u8::MAX as u16 {
             if total < 0x80 {
               // ASCII
               unescaped.push(total as u8);

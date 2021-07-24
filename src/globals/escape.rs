@@ -32,7 +32,11 @@ pub fn escape(bytes: &[u8], escaped: &mut Vec<u8>) {
       if next & 0xC0 == 0x80 {
         let val = ((current as u16 & 0x1F) << 6) | (next as u16 & 0x3F);
 
-        if val >= 0x100 {
+        if val < u8::MAX as u16 {
+          // Get the LSBs only
+          current = (val & 0xFF) as u8;
+          idx += 1;
+        } else {
           let [one, two] = byte_to_hex((val >> 8) as u8);
           let [three, four] = byte_to_hex((val & 0xFF) as u8);
 
@@ -40,10 +44,6 @@ pub fn escape(bytes: &[u8], escaped: &mut Vec<u8>) {
           idx += 2;
 
           continue;
-        } else {
-          // Get the LSBs only
-          current = (val & 0xFF) as u8;
-          idx += 1;
         }
       }
     }
