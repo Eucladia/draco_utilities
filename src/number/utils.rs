@@ -1,16 +1,3 @@
-/// The width of the mantissa in a 64 bit floating point number.
-pub const DOUBLE_MANTISSA_WIDTH: u64 = 52;
-/// The width of the exponent in a 64 bit floating point number.
-pub const DOUBLE_EXPONENT_WIDTH: u64 = 11;
-/// The width of the sign bit in a 64 bit floating point number.
-pub const DOUBLE_SIGN_WIDTH: u64 = 1;
-/// The position of the sign bit in 64 bit floating point number.
-pub const DOUBLE_SIGN_BIT_POSITION: u64 = DOUBLE_MANTISSA_WIDTH + DOUBLE_EXPONENT_WIDTH;
-/// The bias in a 64 bit floating point number.
-pub const DOUBLE_BIAS: u64 = (1 << (DOUBLE_EXPONENT_WIDTH - 1)) - 1;
-/// The implicit bit in the mantissa in a 64 bit floating point number.
-pub const DOUBLE_IMPLICIT_BIT: u64 = 1 << DOUBLE_MANTISSA_WIDTH;
-
 /// Breaks down a [`f64`] into it's sign, exponent, and mantissa bits.
 ///
 /// # Notes
@@ -130,3 +117,30 @@ pub fn next_floating_point(num: f64) -> f64 {
     f64::from_bits(next_number)
   }
 }
+
+/// Commonly used radii.
+pub mod radii {
+  /// The radix used for converting to binary.
+  pub const BINARY_RADIX: u8 = 2;
+  /// The radix used for converting to octal.
+  pub const OCTAL_RADIX: u8 = 8;
+  /// The radix used for converting to decimal.
+  pub const DECIMAL_RADIX: u8 = 10;
+  /// The radix used for converting to hexadecimal.
+  pub const HEXADECIMAL_RADIX: u8 = 16;
+  /// The radix used for converting to hexatridecimal.
+  pub const HEXATRIDECIMAL_RADIX: u8 = 36;
+}
+
+/// The width of the mantissa in a 64 bit floating point number.
+pub const DOUBLE_MANTISSA_WIDTH: u64 = 52;
+/// The width of the exponent in a 64 bit floating point number.
+pub const DOUBLE_EXPONENT_WIDTH: u64 = 11;
+/// The width of the sign bit in a 64 bit floating point number.
+pub const DOUBLE_SIGN_WIDTH: u64 = 1;
+/// The position of the sign bit in 64 bit floating point number.
+pub const DOUBLE_SIGN_BIT_POSITION: u64 = DOUBLE_MANTISSA_WIDTH + DOUBLE_EXPONENT_WIDTH;
+/// The bias in a 64 bit floating point number.
+pub const DOUBLE_BIAS: u64 = (1 << (DOUBLE_EXPONENT_WIDTH - 1)) - 1;
+/// The implicit bit in the mantissa in a 64 bit floating point number.
+pub const DOUBLE_IMPLICIT_BIT: u64 = 1 << DOUBLE_MANTISSA_WIDTH;

@@ -12,7 +12,7 @@ edition = "2018"
 criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
-name = "custom_radix_float"
+name = "number_to_string"
 harness = false
 
 [[bench]]

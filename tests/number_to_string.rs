@@ -1,5 +1,5 @@
 mod float_radix {
-  use draco_utilities::number::float_to_custom_radix;
+  use draco_utilities::number::to_string;
 
   macro_rules! test {
     ($name:ident, $float:expr, $radix:literal, $expected:literal) => {
@@ -7,7 +7,7 @@ mod float_radix {
       fn $name() {
         let mut bytes = Vec::new();
 
-        float_to_custom_radix::<$radix>($float, &mut bytes);
+        to_string::<$radix>($float, &mut bytes);
 
         let decoded = std::str::from_utf8(&bytes).unwrap();
 

@@ -25,7 +25,7 @@ fn singular_radix(c: &mut Criterion) {
 
   c.bench_function("float_to_radix (hex + singular)", |b| {
     b.iter(|| {
-      black_box(number::float_to_custom_radix::<16>(2102.3230, &mut bytes));
+      black_box(number::to_string::<16>(2102.3230, &mut bytes));
     })
   });
 }
@@ -37,10 +37,7 @@ fn singular_radix_large_fractionless_num(c: &mut Criterion) {
     "float_to_radix (hex + singular + large fractionless number)",
     |b| {
       b.iter(|| {
-        black_box(number::float_to_custom_radix::<16>(
-          21023123232132.0,
-          &mut bytes,
-        ));
+        black_box(number::to_string::<16>(21023123232132.0, &mut bytes));
       })
     },
   );
@@ -50,7 +47,7 @@ fn singular_radix_large_num(c: &mut Criterion) {
 
   c.bench_function("float_to_radix (hex + singular + large number)", |b| {
     b.iter(|| {
-      black_box(number::float_to_custom_radix::<16>(
+      black_box(number::to_string::<16>(
         2102238732932.3231323930,
         &mut bytes,
       ));
@@ -65,7 +62,7 @@ fn backtrack(c: &mut Criterion) {
     b.iter_batched(
       || bytes.clone(),
       |mut bytes| {
-        black_box(number::float_to_custom_radix::<3>(2.0 / 7.0, &mut bytes));
+        black_box(number::to_string::<3>(2.0 / 7.0, &mut bytes));
       },
       BatchSize::SmallInput,
     )
@@ -79,7 +76,7 @@ fn batched_radix(c: &mut Criterion) {
     b.iter_batched(
       || bytes.clone(),
       |mut bytes| {
-        black_box(number::float_to_custom_radix::<16>(2102.3230, &mut bytes));
+        black_box(number::to_string::<16>(2102.3230, &mut bytes));
       },
       BatchSize::SmallInput,
     )

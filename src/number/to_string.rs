@@ -24,14 +24,14 @@ const DEFAULT_BUFFER_SIZE: usize = 2200;
 /// # Examples
 ///
 /// ```
-/// use draco_utilities::number::float_to_custom_radix;
+/// use draco_utilities::number::to_string as number_to_string;
 ///
 /// const RADIX: u8 = 16;
 ///
 /// let mut bytes = Vec::new();
 /// let float = 0.141592653589793;
 ///
-/// float_to_custom_radix::<RADIX>(float, &mut bytes);
+/// number_to_string::<RADIX>(float, &mut bytes);
 ///
 /// let string = std::str::from_utf8(&bytes).unwrap();
 ///
@@ -46,7 +46,7 @@ const DEFAULT_BUFFER_SIZE: usize = 2200;
 /// [Number.prototype.toString](https://tc39.es/ecma262/#sec-number.prototype.tostring)
 /// and uses a similar implementation as
 /// [v8's](https://github.com/v8/v8/blob/master/src/numbers/conversions.cc#L1269).
-pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
+pub fn to_string<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
   static_assert!(RADIX: u8 where RADIX >= BINARY_RADIX && RADIX <= HEXATRIDECIMAL_RADIX);
 
   if num.is_nan() {
@@ -74,7 +74,6 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
   let abs_value = num.abs();
   // We can't cast to a u64 because f64 -> u64 is lossy, but we can use a u128 and the performance
   // on x64 is similar enough.
-  // NOTE: f64::{floor,trunc} have function calls that aren't inlined (as of rustc 1.51.0). :/
   let mut integral = abs_value.floor() as u128;
   let mut fraction = abs_value.fract();
   // Multiply by `0.5` in order to determine later on whether the number should be rounded up.
@@ -88,6 +87,7 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
   unsafe {
     let mut temp_buffer: [MaybeUninit<u8>; DEFAULT_BUFFER_SIZE] =
       MaybeUninit::uninit().assume_init();
+
     // The number of starting bytes not written to.
     let mut count = DEFAULT_BUFFER_SIZE;
     // We need to store the end count for backtracking, this is different from `count` because this
@@ -132,8 +132,6 @@ pub fn float_to_custom_radix<const RADIX: u8>(num: f64, bytes: &mut Vec<u8>) {
 
             // We've backtracked to as far as the theoretical decimal point so we need to carry over
             // to the integral.
-            //
-            // Eg: base 10 of `1.9999999999999999` to base 16 would become `2`.
             if backtrack_idx == DEFAULT_BUFFER_SIZE {
               // Need to decrease the end bound by 1 because the decimal point is *always* inserted
               end_count -= 1;
